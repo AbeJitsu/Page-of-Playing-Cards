@@ -1,1 +1,83 @@
-/*  */
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+
+/* Main container for playing cards */
+#playing-cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+/* Individual card styling */
+.card {
+  width: 180px;
+  height: 260px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  color: #000;
+}
+
+.card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Red cards (hearts and diamonds) */
+.card.red {
+  color: #e74c3c;
+}
+
+/* Left section - top suit */
+.left {
+  align-self: flex-start;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* Middle section - card value and large suit */
+.middle {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.middle .value {
+  font-size: 48px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.middle .suit-large {
+  font-size: 64px;
+  line-height: 1;
+}
+
+/* Right section - bottom suit (rotated) */
+.right {
+  align-self: flex-end;
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1;
+  transform: rotate(180deg);
+}
