@@ -20,6 +20,8 @@ class SolitaireGame {
     this.draggedFrom = null;
     this.drawMode = 3; // 1 or 3 cards
     this.stockCycles = 0; // Track how many times through the stock
+    this.movesSinceLastCycle = 0; // Track moves between cycles
+    this.lastGameStateHash = ''; // Track game state for unwinnable detection
 
     this.init();
   }
@@ -126,6 +128,7 @@ class SolitaireGame {
 
     // Render waste - show top 3 cards in draw-3 mode
     const wastePile = document.getElementById('waste');
+    wastePile.style.width = this.drawMode === 3 ? '12.5rem' : '7.5rem';
     wastePile.innerHTML = '';
     if (this.waste.length > 0) {
       const cardsToShow = this.drawMode === 3 ? Math.min(3, this.waste.length) : 1;
@@ -164,8 +167,15 @@ class SolitaireGame {
   }
 
   attachEventListeners() {
-    // Stock click
-    document.getElementById('stock').addEventListener('click', () => this.drawFromStock());
+    // Stock click and keyboard
+    const stockPile = document.getElementById('stock');
+    stockPile.addEventListener('click', () => this.drawFromStock());
+    stockPile.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        this.drawFromStock();
+      }
+    });
 
     // New game button
     document.getElementById('new-game').addEventListener('click', () => this.newGame());
@@ -174,11 +184,13 @@ class SolitaireGame {
     document.getElementById('undo').addEventListener('click', () => this.undo());
 
     // Play again button
-    document.getElementById('play-again').addEventListener('click', () => this.newGame());
+    const playAgainBtn = document.getElementById('play-again');
+    playAgainBtn.addEventListener('click', () => this.newGame());
 
     // Draw mode selector
     document.getElementById('draw-select').addEventListener('change', (e) => {
       this.drawMode = parseInt(e.target.value);
+      this.announceToScreenReader('Starting new game with Draw ' + this.drawMode + ' mode');
       this.newGame(); // Restart game with new draw mode
     });
 
@@ -290,6 +302,7 @@ class SolitaireGame {
       }
 
       this.moveCount++;
+      this.movesSinceLastCycle++;
       this.renderGame();
       this.checkWin();
     }
@@ -324,6 +337,7 @@ class SolitaireGame {
       this.foundations[targetSuit].push(this.draggedCard);
 
       this.moveCount++;
+      this.movesSinceLastCycle++;
       this.renderGame();
       this.checkWin();
     }
@@ -400,20 +414,36 @@ class SolitaireGame {
       this.moveCount++;
       this.renderGame();
     } else if (this.waste.length > 0) {
-      // Reset stock from waste
+      // Reset stock from waste - proper Solitaire order
       this.stockCycles++;
-      while (this.waste.length > 0) {
-        const card = this.waste.pop();
-        card.faceUp = false;
-        this.stock.push(card);
-      }
-      this.renderGame();
 
-      // Check if game might be unwinnable after cycling through stock
-      if (this.stockCycles >= 3) {
+      // Check for unwinnable BEFORE resetting if no moves made
+      if (this.movesSinceLastCycle === 0 && this.stockCycles > 0) {
+        // Went through entire stock without making a move
         this.checkUnwinnable();
+        if (this.stock.length === 0 && this.waste.length > 0) {
+          // Only reset if user didn't start new game
+          this.resetStockFromWaste();
+        }
+      } else {
+        this.resetStockFromWaste();
       }
+
+      this.movesSinceLastCycle = 0;
     }
+  }
+
+  resetStockFromWaste() {
+    // Properly reverse waste pile back to stock
+    // This ensures different cards are accessible on each cycle
+    const wasteCards = [...this.waste];
+    this.waste = [];
+    this.stock = wasteCards.reverse();
+
+    // Turn all cards face-down
+    this.stock.forEach(card => card.faceUp = false);
+
+    this.renderGame();
   }
 
   checkWin() {
@@ -421,7 +451,25 @@ class SolitaireGame {
 
     if (allFoundationsFull) {
       clearInterval(this.timerInterval);
-      document.getElementById('win-message').style.display = 'block';
+      const winDialog = document.getElementById('win-message');
+      winDialog.style.display = 'block';
+
+      // Focus management - focus the "Play Again" button
+      setTimeout(() => {
+        document.getElementById('play-again').focus();
+      }, 100);
+
+      this.announceToScreenReader('Congratulations! You won the game!');
+    }
+  }
+
+  announceToScreenReader(message) {
+    const announcer = document.getElementById('status-announcer');
+    if (announcer) {
+      announcer.textContent = '';
+      setTimeout(() => {
+        announcer.textContent = message;
+      }, 100);
     }
   }
 
@@ -486,14 +534,34 @@ class SolitaireGame {
       }
     }
 
-    // Check if there are face-down cards that could be revealed
+    // Check if there are face-down cards that COULD be revealed
+    // (only return true if a face-down card exists AND there's a way to reveal it)
     for (let i = 0; i < 7; i++) {
       const pile = this.tableau[i];
-      for (const card of pile) {
-        if (!card.faceUp) {
-          return true; // Face-down cards might contain useful cards
+      if (pile.length > 0) {
+        // Check if top card can be moved (which would reveal a face-down card)
+        const topCard = pile[pile.length - 1];
+        if (topCard.faceUp) {
+          // Check if there's a face-down card below
+          const hasFaceDown = pile.some(card => !card.faceUp);
+          if (hasFaceDown) {
+            // Check if we can move the top card anywhere
+            for (let j = 0; j < 7; j++) {
+              if (i !== j && this.canMoveToTableau(topCard, this.tableau[j])) {
+                return true; // Can reveal face-down card
+              }
+            }
+            if (this.canMoveToFoundation(topCard, topCard.suit)) {
+              return true; // Can reveal face-down card
+            }
+          }
         }
       }
+    }
+
+    // Check if there are more cards in stock/waste that haven't been fully explored
+    if (this.stock.length > 0) {
+      return true; // More cards to draw
     }
 
     return false;
@@ -509,6 +577,8 @@ class SolitaireGame {
     this.moveCount = 0;
     this.startTime = null;
     this.stockCycles = 0;
+    this.movesSinceLastCycle = 0;
+    this.lastGameStateHash = '';
     document.getElementById('win-message').style.display = 'none';
     this.init();
   }

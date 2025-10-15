@@ -4,27 +4,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Playing Cards</title>
+  <title>Solitaire - Classic Card Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
 </head>
 
 <body>
+  <!-- Skip link for keyboard users -->
+  <a href="#playing-cards" class="skip-link">Skip to game board</a>
+
   <div id="game-container">
     <header>
       <h1>Solitaire</h1>
       <div id="controls">
         <button id="new-game" aria-label="Start new game">New Game</button>
-        <button id="undo" aria-label="Undo last move">Undo</button>
+        <button id="undo" aria-label="Undo last move" aria-disabled="true">Undo</button>
         <div id="draw-mode">
           <label for="draw-select">Draw:</label>
-          <select id="draw-select" aria-label="Select draw mode">
+          <select id="draw-select" aria-label="Select draw mode" aria-describedby="draw-mode-hint">
             <option value="1">Draw 1</option>
             <option value="3" selected>Draw 3</option>
           </select>
+          <span id="draw-mode-hint" class="visually-hidden">Changing draw mode will restart the game</span>
         </div>
-        <div id="timer">Time: <span id="time">0:00</span></div>
-        <div id="moves">Moves: <span id="move-count">0</span></div>
+        <div id="timer" aria-live="off">Time: <span id="time">0:00</span></div>
+        <div id="moves" aria-live="polite" aria-atomic="true">Moves: <span id="move-count">0</span></div>
       </div>
     </header>
 
@@ -32,8 +39,8 @@
       <!-- Top Row: Stock/Waste and Foundations -->
       <div id="top-row">
         <div id="stock-waste">
-          <div id="stock" class="pile" aria-label="Stock pile - click to draw cards"></div>
-          <div id="waste" class="pile" aria-label="Waste pile"></div>
+          <div id="stock" class="pile" role="button" tabindex="0" aria-label="Stock pile - press Enter or Space to draw cards"></div>
+          <div id="waste" class="pile" aria-label="Waste pile" aria-live="polite"></div>
         </div>
 
         <div id="foundations">
@@ -56,10 +63,13 @@
       </div>
     </main>
 
-    <div id="win-message" style="display: none;">
-      <h2>Congratulations! You Win!</h2>
+    <div id="win-message" role="alertdialog" aria-modal="true" aria-labelledby="win-title" style="display: none;">
+      <h2 id="win-title">Congratulations! You Win!</h2>
       <button id="play-again">Play Again</button>
     </div>
+
+    <!-- Hidden status announcer for screen readers -->
+    <div id="status-announcer" role="status" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
   </div>
 </body>
 
