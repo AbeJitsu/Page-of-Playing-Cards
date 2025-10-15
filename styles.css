@@ -462,9 +462,10 @@ button:focus-visible {
 
 #unwinnable-message .modal-buttons {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem; /* 12px - slightly tighter for 3-button layout */
   justify-content: center;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .primary-button {

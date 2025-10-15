@@ -198,11 +198,38 @@ class SolitaireGame {
     // Unwinnable dialog buttons
     const newGameUnwinnableBtn = document.getElementById('new-game-unwinnable');
     const continueAnywayBtn = document.getElementById('continue-anyway');
+    const switchToDraw1Btn = document.getElementById('switch-to-draw1');
 
     if (newGameUnwinnableBtn) {
       newGameUnwinnableBtn.addEventListener('click', () => {
         this.hideUnwinnableDialog();
         this.newGame();
+      });
+    }
+
+    if (switchToDraw1Btn) {
+      switchToDraw1Btn.addEventListener('click', () => {
+        // Change to Draw-1 mode WITHOUT restarting game
+        this.drawMode = 1;
+
+        // Update the select dropdown to reflect change
+        const drawSelect = document.getElementById('draw-select');
+        if (drawSelect) {
+          drawSelect.value = '1';
+        }
+
+        // Hide dialog
+        this.hideUnwinnableDialog();
+
+        // Reset stock cycles to give fresh chance with new mode
+        this.stockCycles = 0;
+        this.movesSinceLastCycle = 0;
+
+        // Re-render with new draw mode
+        this.renderGame();
+
+        // Announce to screen reader
+        this.announceToScreenReader('Switched to Draw-1 mode. You can now see all cards one at a time.');
       });
     }
 
@@ -612,6 +639,25 @@ class SolitaireGame {
   showUnwinnableDialog() {
     const dialog = document.getElementById('unwinnable-message');
     const backdrop = document.getElementById('modal-backdrop');
+    const description = dialog ? dialog.querySelector('.modal-description') : null;
+    const switchBtn = document.getElementById('switch-to-draw1');
+
+    // Update message and button visibility based on draw mode
+    if (this.drawMode === 3) {
+      if (description) {
+        description.textContent = 'This game appears unwinnable in Draw-3 mode. Try switching to Draw-1 to see all cards.';
+      }
+      if (switchBtn) {
+        switchBtn.style.display = 'inline-block';
+      }
+    } else {
+      if (description) {
+        description.textContent = 'This game appears to be unwinnable. No legal moves are available.';
+      }
+      if (switchBtn) {
+        switchBtn.style.display = 'none';
+      }
+    }
 
     // Show dialog and backdrop
     if (dialog) {
@@ -624,16 +670,24 @@ class SolitaireGame {
     // Prevent body scroll
     document.body.classList.add('modal-open');
 
-    // Focus management - focus the "New Game" button
+    // Focus management - focus the "Switch to Draw-1" button if visible, otherwise "New Game"
     setTimeout(() => {
-      const newGameBtn = document.getElementById('new-game-unwinnable');
-      if (newGameBtn) {
-        newGameBtn.focus();
+      if (this.drawMode === 3 && switchBtn) {
+        switchBtn.focus();
+      } else {
+        const newGameBtn = document.getElementById('new-game-unwinnable');
+        if (newGameBtn) {
+          newGameBtn.focus();
+        }
       }
     }, 100);
 
     // Announce to screen readers
-    this.announceToScreenReader('Game appears unwinnable. No legal moves available.');
+    if (this.drawMode === 3) {
+      this.announceToScreenReader('Game appears unwinnable in Draw-3 mode. Try switching to Draw-1 to see all cards.');
+    } else {
+      this.announceToScreenReader('Game appears unwinnable. No legal moves available.');
+    }
   }
 
   hideUnwinnableDialog() {
@@ -649,6 +703,35 @@ class SolitaireGame {
 
     // Restore body scroll
     document.body.classList.remove('modal-open');
+  }
+
+  isMoveProductive(sourceIndex, targetIndex) {
+    const sourcePile = this.tableau[sourceIndex];
+    const targetPile = this.tableau[targetIndex];
+
+    // Moving to empty pile is always productive (creates space for Kings elsewhere)
+    if (targetPile.length === 0) {
+      return true;
+    }
+
+    // Check if move reveals a face-down card in source pile
+    if (sourcePile.length > 1) {
+      const cardBelow = sourcePile[sourcePile.length - 2];
+      if (!cardBelow.faceUp) {
+        return true; // Will reveal face-down card
+      }
+    }
+
+    // Check if target pile has face-down cards
+    // Building on a pile with hidden cards is potentially productive
+    const targetHasFaceDown = targetPile.some(card => !card.faceUp);
+    if (targetHasFaceDown) {
+      return true;
+    }
+
+    // Non-productive: both piles are fully face-up with no cards below to reveal
+    // This catches infinite loops like 7♣ ↔ 8♥
+    return false;
   }
 
   hasAnyLegalMoves() {
@@ -679,7 +762,10 @@ class SolitaireGame {
         if (topCard.faceUp) {
           for (let j = 0; j < 7; j++) {
             if (i !== j && this.canMoveToTableau(topCard, this.tableau[j])) {
-              return true;
+              // Only count as legal move if it's productive
+              if (this.isMoveProductive(i, j)) {
+                return true;
+              }
             }
           }
         }
@@ -691,7 +777,12 @@ class SolitaireGame {
       const wasteCard = this.waste[this.waste.length - 1];
       for (let i = 0; i < 7; i++) {
         if (this.canMoveToTableau(wasteCard, this.tableau[i])) {
-          return true;
+          // Moving from waste is generally productive (clears waste pile)
+          // But be strict: only allow if moving to empty pile or pile with face-down cards
+          const targetPile = this.tableau[i];
+          if (targetPile.length === 0 || targetPile.some(card => !card.faceUp)) {
+            return true;
+          }
         }
       }
     }
@@ -707,10 +798,13 @@ class SolitaireGame {
           // Check if there's a face-down card below
           const hasFaceDown = pile.some(card => !card.faceUp);
           if (hasFaceDown) {
-            // Check if we can move the top card anywhere
+            // Check if we can move the top card anywhere (productively)
             for (let j = 0; j < 7; j++) {
               if (i !== j && this.canMoveToTableau(topCard, this.tableau[j])) {
-                return true; // Can reveal face-down card
+                // Use productivity check for consistency
+                if (this.isMoveProductive(i, j)) {
+                  return true; // Can reveal face-down card
+                }
               }
             }
             if (this.canMoveToFoundation(topCard, topCard.suit)) {
