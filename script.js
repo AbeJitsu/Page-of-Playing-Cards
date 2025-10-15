@@ -32,6 +32,7 @@ class SolitaireGame {
     this.renderGame();
     this.attachEventListeners();
     this.updateUndoButton();
+    this.updateAutoCompleteButton();
     this.startTimer();
   }
 
@@ -184,6 +185,12 @@ class SolitaireGame {
     // Undo button
     document.getElementById('undo').addEventListener('click', () => this.undo());
 
+    // Auto-complete button
+    const autoCompleteBtn = document.getElementById('auto-complete');
+    if (autoCompleteBtn) {
+      autoCompleteBtn.addEventListener('click', () => this.autoComplete());
+    }
+
     // Play again button
     const playAgainBtn = document.getElementById('play-again');
     playAgainBtn.addEventListener('click', () => this.newGame());
@@ -263,6 +270,15 @@ class SolitaireGame {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
         e.preventDefault();
         this.undo();
+      }
+
+      // Ctrl+A (Windows/Linux) or Cmd+A (Mac) to auto-complete
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        const btn = document.getElementById('auto-complete');
+        if (btn && !btn.disabled) {
+          this.autoComplete();
+        }
       }
     });
 
@@ -391,6 +407,7 @@ class SolitaireGame {
       this.moveCount++;
       this.movesSinceLastCycle++;
       this.updateUndoButton();
+      this.updateAutoCompleteButton();
       this.renderGame();
       this.checkWin();
 
@@ -442,6 +459,7 @@ class SolitaireGame {
       this.moveCount++;
       this.movesSinceLastCycle++;
       this.updateUndoButton();
+      this.updateAutoCompleteButton();
       this.renderGame();
       this.checkWin();
 
@@ -509,6 +527,61 @@ class SolitaireGame {
     }
   }
 
+  autoComplete() {
+    // Don't run if not auto-completable
+    if (!this.isAutoCompletable()) {
+      return;
+    }
+
+    // Disable the button during execution
+    const btn = document.getElementById('auto-complete');
+    if (btn) {
+      btn.disabled = true;
+    }
+
+    // Announce to screen readers
+    this.announceToScreenReader('Auto-completing game. Moving all cards to foundations.');
+
+    // Start recursive animation
+    this.autoCompleteStep();
+  }
+
+  autoCompleteStep() {
+    // Find the lowest card that can move to foundation
+    let cardToMove = null;
+    let sourceIndex = -1;
+
+    for (let i = 0; i < 7; i++) {
+      const pile = this.tableau[i];
+      if (pile.length > 0) {
+        const topCard = pile[pile.length - 1];
+        if (this.canMoveToFoundation(topCard, topCard.suit)) {
+          // Prioritize lower-value cards (move Aces before Kings)
+          if (!cardToMove || this.rankValues[topCard.rank] < this.rankValues[cardToMove.rank]) {
+            cardToMove = topCard;
+            sourceIndex = i;
+          }
+        }
+      }
+    }
+
+    // If found a card to move, move it
+    if (cardToMove && sourceIndex >= 0) {
+      this.draggedCard = cardToMove;
+      this.draggedFrom = { type: 'tableau', index: sourceIndex };
+      this.moveToFoundation(cardToMove.suit);
+
+      // Continue after 150ms delay for smooth animation
+      setTimeout(() => this.autoCompleteStep(), 150);
+    } else {
+      // No more moves - we're done
+      this.updateAutoCompleteButton();
+
+      // Check if we won (slight delay for final card animation)
+      setTimeout(() => this.checkWin(), 300);
+    }
+  }
+
   drawFromStock() {
     if (this.stock.length > 0) {
       // Draw cards based on draw mode
@@ -531,6 +604,7 @@ class SolitaireGame {
 
       this.moveCount++;
       this.updateUndoButton();
+      this.updateAutoCompleteButton();
       this.renderGame();
 
       // Check if stuck after drawing (with small delay)
@@ -604,6 +678,19 @@ class SolitaireGame {
       } else {
         undoBtn.setAttribute('aria-disabled', 'false');
         undoBtn.disabled = false;
+      }
+    }
+  }
+
+  updateAutoCompleteButton() {
+    const btn = document.getElementById('auto-complete');
+    if (btn) {
+      if (this.isAutoCompletable()) {
+        btn.setAttribute('aria-disabled', 'false');
+        btn.disabled = false;
+      } else {
+        btn.setAttribute('aria-disabled', 'true');
+        btn.disabled = true;
       }
     }
   }
@@ -732,6 +819,34 @@ class SolitaireGame {
     // Non-productive: both piles are fully face-up with no cards below to reveal
     // This catches infinite loops like 7♣ ↔ 8♥
     return false;
+  }
+
+  isAutoCompletable() {
+    // Must have no cards in stock or waste
+    if (this.stock.length > 0 || this.waste.length > 0) {
+      return false;
+    }
+
+    // All tableau cards must be face-up
+    for (let i = 0; i < 7; i++) {
+      const pile = this.tableau[i];
+      for (const card of pile) {
+        if (!card.faceUp) {
+          return false; // Found a face-down card
+        }
+      }
+    }
+
+    // Must have at least one card to move to foundations
+    let hasCardsToMove = false;
+    for (let i = 0; i < 7; i++) {
+      if (this.tableau[i].length > 0) {
+        hasCardsToMove = true;
+        break;
+      }
+    }
+
+    return hasCardsToMove;
   }
 
   hasAnyLegalMoves() {
@@ -920,6 +1035,7 @@ class SolitaireGame {
 
     // Update UI
     this.updateUndoButton();
+    this.updateAutoCompleteButton();
     this.renderGame();
     this.announceToScreenReader('Move undone');
   }
