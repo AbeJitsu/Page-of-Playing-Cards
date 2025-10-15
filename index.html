@@ -10,59 +10,57 @@
 </head>
 
 <body>
-  <main id="playing-cards" role="main" aria-label="Playing cards display">
-    <div class="card" role="img" aria-label="Ace of Spades" tabindex="0">
-      <div class="left">
-        <span class="suit" aria-hidden="true">♠</span>
+  <div id="game-container">
+    <header>
+      <h1>Solitaire</h1>
+      <div id="controls">
+        <button id="new-game" aria-label="Start new game">New Game</button>
+        <button id="undo" aria-label="Undo last move">Undo</button>
+        <div id="draw-mode">
+          <label for="draw-select">Draw:</label>
+          <select id="draw-select" aria-label="Select draw mode">
+            <option value="1">Draw 1</option>
+            <option value="3">Draw 3</option>
+          </select>
+        </div>
+        <div id="timer">Time: <span id="time">0:00</span></div>
+        <div id="moves">Moves: <span id="move-count">0</span></div>
       </div>
-      <div class="middle">
-        <span class="value" aria-hidden="true">A</span>
-        <span class="suit-large" aria-hidden="true">♠</span>
-      </div>
-      <div class="right">
-        <span class="suit" aria-hidden="true">♠</span>
-      </div>
-    </div>
+    </header>
 
-    <div class="card red" role="img" aria-label="King of Hearts" tabindex="0">
-      <div class="left">
-        <span class="suit" aria-hidden="true">♥</span>
-      </div>
-      <div class="middle">
-        <span class="value" aria-hidden="true">K</span>
-        <span class="suit-large" aria-hidden="true">♥</span>
-      </div>
-      <div class="right">
-        <span class="suit" aria-hidden="true">♥</span>
-      </div>
-    </div>
+    <main id="playing-cards" role="main" aria-label="Solitaire game board">
+      <!-- Top Row: Stock/Waste and Foundations -->
+      <div id="top-row">
+        <div id="stock-waste">
+          <div id="stock" class="pile" aria-label="Stock pile - click to draw cards"></div>
+          <div id="waste" class="pile" aria-label="Waste pile"></div>
+        </div>
 
-    <div class="card red" role="img" aria-label="Queen of Diamonds" tabindex="0">
-      <div class="left">
-        <span class="suit" aria-hidden="true">♦</span>
+        <div id="foundations">
+          <div class="foundation pile" data-suit="spades" aria-label="Spades foundation"></div>
+          <div class="foundation pile" data-suit="hearts" aria-label="Hearts foundation"></div>
+          <div class="foundation pile" data-suit="diamonds" aria-label="Diamonds foundation"></div>
+          <div class="foundation pile" data-suit="clubs" aria-label="Clubs foundation"></div>
+        </div>
       </div>
-      <div class="middle">
-        <span class="value" aria-hidden="true">Q</span>
-        <span class="suit-large" aria-hidden="true">♦</span>
-      </div>
-      <div class="right">
-        <span class="suit" aria-hidden="true">♦</span>
-      </div>
-    </div>
 
-    <div class="card" role="img" aria-label="Jack of Clubs" tabindex="0">
-      <div class="left">
-        <span class="suit" aria-hidden="true">♣</span>
+      <!-- Bottom Row: Tableau (7 columns) -->
+      <div id="tableau">
+        <div class="tableau-pile pile" data-pile="0" aria-label="Tableau pile 1"></div>
+        <div class="tableau-pile pile" data-pile="1" aria-label="Tableau pile 2"></div>
+        <div class="tableau-pile pile" data-pile="2" aria-label="Tableau pile 3"></div>
+        <div class="tableau-pile pile" data-pile="3" aria-label="Tableau pile 4"></div>
+        <div class="tableau-pile pile" data-pile="4" aria-label="Tableau pile 5"></div>
+        <div class="tableau-pile pile" data-pile="5" aria-label="Tableau pile 6"></div>
+        <div class="tableau-pile pile" data-pile="6" aria-label="Tableau pile 7"></div>
       </div>
-      <div class="middle">
-        <span class="value" aria-hidden="true">J</span>
-        <span class="suit-large" aria-hidden="true">♣</span>
-      </div>
-      <div class="right">
-        <span class="suit" aria-hidden="true">♣</span>
-      </div>
+    </main>
+
+    <div id="win-message" style="display: none;">
+      <h2>Congratulations! You Win!</h2>
+      <button id="play-again">Play Again</button>
     </div>
-  </main>
+  </div>
 </body>
 
 </html>
