@@ -128,12 +128,12 @@ class SolitaireGame {
       stockPile.appendChild(placeholder);
     }
 
-    // Render waste - show top 3 cards in draw-3 mode
+    // Render waste - always show up to 3 cards for better visibility
     const wastePile = document.getElementById('waste');
     wastePile.style.width = this.drawMode === 3 ? '12.5rem' : '7.5rem';
     wastePile.innerHTML = '';
     if (this.waste.length > 0) {
-      const cardsToShow = this.drawMode === 3 ? Math.min(3, this.waste.length) : 1;
+      const cardsToShow = Math.min(3, this.waste.length); // Always show up to 3 cards
       const startIndex = Math.max(0, this.waste.length - cardsToShow);
 
       for (let i = startIndex; i < this.waste.length; i++) {
