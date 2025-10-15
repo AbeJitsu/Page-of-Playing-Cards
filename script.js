@@ -18,7 +18,7 @@ class SolitaireGame {
     this.timerInterval = null;
     this.draggedCard = null;
     this.draggedFrom = null;
-    this.drawMode = 1; // 1 or 3 cards
+    this.drawMode = 3; // 1 or 3 cards
     this.stockCycles = 0; // Track how many times through the stock
 
     this.init();
