@@ -31,6 +31,7 @@ class SolitaireGame {
     this.dealCards();
     this.renderGame();
     this.attachEventListeners();
+    this.updateUndoButton();
     this.startTimer();
   }
 
@@ -194,6 +195,50 @@ class SolitaireGame {
       this.newGame(); // Restart game with new draw mode
     });
 
+    // Unwinnable dialog buttons
+    const newGameUnwinnableBtn = document.getElementById('new-game-unwinnable');
+    const continueAnywayBtn = document.getElementById('continue-anyway');
+
+    if (newGameUnwinnableBtn) {
+      newGameUnwinnableBtn.addEventListener('click', () => {
+        this.hideUnwinnableDialog();
+        this.newGame();
+      });
+    }
+
+    if (continueAnywayBtn) {
+      continueAnywayBtn.addEventListener('click', () => {
+        // Reset move counter to give player a fresh chance
+        this.movesSinceLastCycle = 0;
+        this.hideUnwinnableDialog();
+      });
+    }
+
+    // Close modal on backdrop click
+    const backdrop = document.getElementById('modal-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', () => {
+        this.hideUnwinnableDialog();
+      });
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      // ESC key to close modals
+      if (e.key === 'Escape') {
+        const unwinnableDialog = document.getElementById('unwinnable-message');
+        if (unwinnableDialog && unwinnableDialog.style.display === 'block') {
+          this.hideUnwinnableDialog();
+        }
+      }
+
+      // Ctrl+Z (Windows/Linux) or Cmd+Z (Mac) to undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        this.undo();
+      }
+    });
+
     // Drag and drop
     document.addEventListener('dragstart', (e) => this.handleDragStart(e));
     document.addEventListener('dragover', (e) => this.handleDragOver(e));
@@ -277,34 +322,53 @@ class SolitaireGame {
     const canMove = this.canMoveToTableau(this.draggedCard, targetPile);
 
     if (canMove) {
+      let cardsToMove = [];
+      let flippedCard = null;
+
       // Remove from source
       if (this.draggedFrom.type === 'tableau') {
         const sourceIndex = this.draggedFrom.index;
         const cardIndex = this.tableau[sourceIndex].indexOf(this.draggedCard);
-        const cardsToMove = this.tableau[sourceIndex].splice(cardIndex);
+        cardsToMove = this.tableau[sourceIndex].splice(cardIndex);
 
         // Flip top card if needed
         if (this.tableau[sourceIndex].length > 0) {
           const topCard = this.tableau[sourceIndex][this.tableau[sourceIndex].length - 1];
           if (!topCard.faceUp) {
             topCard.faceUp = true;
+            flippedCard = topCard;
           }
         }
 
         // Move cards
         this.tableau[targetIndex].push(...cardsToMove);
       } else if (this.draggedFrom.type === 'waste') {
+        cardsToMove = [this.draggedCard];
         this.waste.pop();
         this.tableau[targetIndex].push(this.draggedCard);
       } else if (this.draggedFrom.type === 'foundation') {
+        cardsToMove = [this.draggedCard];
         this.foundations[this.draggedFrom.suit].pop();
         this.tableau[targetIndex].push(this.draggedCard);
       }
 
+      // Track move for undo
+      this.moveHistory.push({
+        type: 'to-tableau',
+        from: { ...this.draggedFrom },
+        to: { type: 'tableau', index: targetIndex },
+        cards: cardsToMove,
+        flippedCard: flippedCard
+      });
+
       this.moveCount++;
       this.movesSinceLastCycle++;
+      this.updateUndoButton();
       this.renderGame();
       this.checkWin();
+
+      // Check if stuck after this move (with small delay)
+      setTimeout(() => this.checkIfStuck(), 500);
     }
 
     this.draggedCard = null;
@@ -317,6 +381,8 @@ class SolitaireGame {
     const canMove = this.canMoveToFoundation(this.draggedCard, targetSuit);
 
     if (canMove) {
+      let flippedCard = null;
+
       // Remove from source
       if (this.draggedFrom.type === 'tableau') {
         const sourceIndex = this.draggedFrom.index;
@@ -327,6 +393,7 @@ class SolitaireGame {
           const topCard = this.tableau[sourceIndex][this.tableau[sourceIndex].length - 1];
           if (!topCard.faceUp) {
             topCard.faceUp = true;
+            flippedCard = topCard;
           }
         }
       } else if (this.draggedFrom.type === 'waste') {
@@ -336,10 +403,23 @@ class SolitaireGame {
       // Add to foundation
       this.foundations[targetSuit].push(this.draggedCard);
 
+      // Track move for undo
+      this.moveHistory.push({
+        type: 'to-foundation',
+        from: { ...this.draggedFrom },
+        to: { type: 'foundation', suit: targetSuit },
+        card: this.draggedCard,
+        flippedCard: flippedCard
+      });
+
       this.moveCount++;
       this.movesSinceLastCycle++;
+      this.updateUndoButton();
       this.renderGame();
       this.checkWin();
+
+      // Check if stuck after this move (with small delay)
+      setTimeout(() => this.checkIfStuck(), 500);
     }
 
     this.draggedCard = null;
@@ -406,13 +486,28 @@ class SolitaireGame {
     if (this.stock.length > 0) {
       // Draw cards based on draw mode
       const cardsToDraw = Math.min(this.drawMode, this.stock.length);
+      const drawnCards = [];
+
       for (let i = 0; i < cardsToDraw; i++) {
         const card = this.stock.pop();
         card.faceUp = true;
         this.waste.push(card);
+        drawnCards.push(card);
       }
+
+      // Track move for undo
+      this.moveHistory.push({
+        type: 'draw',
+        count: cardsToDraw,
+        cards: drawnCards
+      });
+
       this.moveCount++;
+      this.updateUndoButton();
       this.renderGame();
+
+      // Check if stuck after drawing (with small delay)
+      setTimeout(() => this.checkIfStuck(), 300);
     } else if (this.waste.length > 0) {
       // Reset stock from waste - proper Solitaire order
       this.stockCycles++;
@@ -473,20 +568,87 @@ class SolitaireGame {
     }
   }
 
+  updateUndoButton() {
+    const undoBtn = document.getElementById('undo');
+    if (undoBtn) {
+      if (this.moveHistory.length === 0) {
+        undoBtn.setAttribute('aria-disabled', 'true');
+        undoBtn.disabled = true;
+      } else {
+        undoBtn.setAttribute('aria-disabled', 'false');
+        undoBtn.disabled = false;
+      }
+    }
+  }
+
   checkUnwinnable() {
     // Simple heuristic: Check if there are any legal moves available
     const hasLegalMoves = this.hasAnyLegalMoves();
 
     if (!hasLegalMoves) {
-      const message = confirm(
-        'This game appears to be unwinnable. No legal moves are available.\n\n' +
-        'Would you like to start a new game?'
-      );
-
-      if (message) {
-        this.newGame();
-      }
+      this.showUnwinnableDialog();
     }
+  }
+
+  checkIfStuck() {
+    // Don't check if modals are open or game is won
+    const winMessage = document.getElementById('win-message');
+    const unwinnableMessage = document.getElementById('unwinnable-message');
+
+    if (winMessage && winMessage.style.display === 'block') return;
+    if (unwinnableMessage && unwinnableMessage.style.display === 'block') return;
+
+    // Only check if we've explored the stock at least once
+    if (this.stockCycles === 0 && this.stock.length > 0) return;
+
+    // Check if there are any legal moves
+    const hasLegalMoves = this.hasAnyLegalMoves();
+
+    if (!hasLegalMoves) {
+      this.showUnwinnableDialog();
+    }
+  }
+
+  showUnwinnableDialog() {
+    const dialog = document.getElementById('unwinnable-message');
+    const backdrop = document.getElementById('modal-backdrop');
+
+    // Show dialog and backdrop
+    if (dialog) {
+      dialog.style.display = 'block';
+    }
+    if (backdrop) {
+      backdrop.style.display = 'block';
+    }
+
+    // Prevent body scroll
+    document.body.classList.add('modal-open');
+
+    // Focus management - focus the "New Game" button
+    setTimeout(() => {
+      const newGameBtn = document.getElementById('new-game-unwinnable');
+      if (newGameBtn) {
+        newGameBtn.focus();
+      }
+    }, 100);
+
+    // Announce to screen readers
+    this.announceToScreenReader('Game appears unwinnable. No legal moves available.');
+  }
+
+  hideUnwinnableDialog() {
+    const dialog = document.getElementById('unwinnable-message');
+    const backdrop = document.getElementById('modal-backdrop');
+
+    if (dialog) {
+      dialog.style.display = 'none';
+    }
+    if (backdrop) {
+      backdrop.style.display = 'none';
+    }
+
+    // Restore body scroll
+    document.body.classList.remove('modal-open');
   }
 
   hasAnyLegalMoves() {
@@ -559,9 +721,17 @@ class SolitaireGame {
       }
     }
 
-    // Check if there are more cards in stock/waste that haven't been fully explored
-    if (this.stock.length > 0) {
-      return true; // More cards to draw
+    // Check if ANY cards in stock/waste could potentially help
+    if (this.stock.length > 0 || this.waste.length > 0) {
+      // Both draw modes need 2 cycles to confirm unwinnable
+      // Even in Draw-1, moves made during first cycle can reveal new opportunities
+      const cyclesNeeded = 2;
+
+      // If we've cycled enough times with no moves, stock won't help
+      if (this.stockCycles >= cyclesNeeded && this.movesSinceLastCycle === 0) {
+        return false; // Already tried all accessible stock cards with no success
+      }
+      return true; // Haven't fully explored stock yet
     }
 
     return false;
@@ -584,8 +754,80 @@ class SolitaireGame {
   }
 
   undo() {
-    // Simplified undo - would need full move history tracking for complete implementation
-    alert('Undo feature coming soon!');
+    if (this.moveHistory.length === 0) return;
+
+    // Don't allow undo if modals are open
+    const winMessage = document.getElementById('win-message');
+    const unwinnableMessage = document.getElementById('unwinnable-message');
+    if ((winMessage && winMessage.style.display === 'block') ||
+        (unwinnableMessage && unwinnableMessage.style.display === 'block')) {
+      return;
+    }
+
+    const lastMove = this.moveHistory.pop();
+
+    // Reverse the move based on type
+    switch (lastMove.type) {
+      case 'draw':
+        // Move cards from waste back to stock
+        for (let i = 0; i < lastMove.count; i++) {
+          const card = this.waste.pop();
+          card.faceUp = false;
+          this.stock.push(card);
+        }
+        break;
+
+      case 'to-tableau':
+        // Move cards back from tableau to source
+        const targetIndex = lastMove.to.index;
+        const cardsToMoveBack = this.tableau[targetIndex].splice(-lastMove.cards.length);
+
+        if (lastMove.from.type === 'tableau') {
+          // Move back to tableau
+          this.tableau[lastMove.from.index].push(...cardsToMoveBack);
+
+          // Unflip card if one was flipped
+          if (lastMove.flippedCard) {
+            lastMove.flippedCard.faceUp = false;
+          }
+        } else if (lastMove.from.type === 'waste') {
+          // Move back to waste
+          this.waste.push(cardsToMoveBack[0]);
+        } else if (lastMove.from.type === 'foundation') {
+          // Move back to foundation
+          this.foundations[lastMove.from.suit].push(cardsToMoveBack[0]);
+        }
+        break;
+
+      case 'to-foundation':
+        // Move card from foundation back to source
+        const card = this.foundations[lastMove.to.suit].pop();
+
+        if (lastMove.from.type === 'tableau') {
+          // Move back to tableau
+          this.tableau[lastMove.from.index].push(card);
+
+          // Unflip card if one was flipped
+          if (lastMove.flippedCard) {
+            lastMove.flippedCard.faceUp = false;
+          }
+        } else if (lastMove.from.type === 'waste') {
+          // Move back to waste
+          this.waste.push(card);
+        }
+        break;
+    }
+
+    // Update counters
+    this.moveCount--;
+    if (this.movesSinceLastCycle > 0) {
+      this.movesSinceLastCycle--;
+    }
+
+    // Update UI
+    this.updateUndoButton();
+    this.renderGame();
+    this.announceToScreenReader('Move undone');
   }
 
   startTimer() {

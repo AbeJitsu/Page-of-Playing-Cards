@@ -68,6 +68,20 @@
       <button id="play-again">Play Again</button>
     </div>
 
+    <!-- Unwinnable game message -->
+    <div id="unwinnable-message" role="alertdialog" aria-modal="true" aria-labelledby="unwinnable-title" style="display: none;">
+      <div class="modal-icon">⚠️</div>
+      <h2 id="unwinnable-title">No Moves Available</h2>
+      <p class="modal-description">This game appears to be unwinnable. No legal moves are available.</p>
+      <div class="modal-buttons">
+        <button id="new-game-unwinnable" class="primary-button">New Game</button>
+        <button id="continue-anyway" class="secondary-button">Continue Anyway</button>
+      </div>
+    </div>
+
+    <!-- Modal backdrop overlay -->
+    <div id="modal-backdrop" style="display: none;"></div>
+
     <!-- Hidden status announcer for screen readers -->
     <div id="status-announcer" role="status" aria-live="polite" aria-atomic="true" class="visually-hidden"></div>
   </div>

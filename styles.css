@@ -418,6 +418,125 @@ button:focus-visible {
   background: #6bb8ff;
 }
 
+/* Unwinnable message modal */
+#unwinnable-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.95);
+  padding: 2.5rem 3.75rem; /* 40px 60px */
+  border-radius: 1rem; /* 16px */
+  text-align: center;
+  border: 0.1875rem solid rgba(255, 165, 0, 0.5); /* 3px orange border */
+  box-shadow: 0 0 3.75rem rgba(255, 165, 0, 0.3); /* 60px orange glow */
+  z-index: 2000;
+  max-width: 28rem; /* 448px */
+}
+
+#unwinnable-message .modal-icon {
+  font-size: 3rem; /* 48px */
+  margin-bottom: 1rem;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+#unwinnable-message h2 {
+  font-family: var(--font-ui);
+  font-size: 1.75rem; /* 28px */
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #ffa500; /* Orange warning color */
+}
+
+#unwinnable-message .modal-description {
+  font-size: 1rem; /* 16px */
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem; /* 24px */
+}
+
+#unwinnable-message .modal-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.primary-button {
+  background: #ffa500;
+  color: #000000;
+  border: none;
+  padding: 0.75rem 1.5rem; /* 12px 24px */
+  font-size: 1rem; /* 16px */
+  font-family: var(--font-ui);
+  font-weight: 600;
+  border-radius: 0.5rem; /* 8px */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.primary-button:hover {
+  background: #ff8c00;
+  transform: translateY(-0.125rem); /* -2px */
+}
+
+.primary-button:focus-visible {
+  outline: 0.1875rem solid #ffa500;
+  outline-offset: 0.25rem;
+}
+
+.secondary-button {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5); /* Reduced from 0.8 for less prominence */
+  border: 0.125rem solid rgba(255, 255, 255, 0.2); /* Reduced from 0.3 */
+  padding: 0.5rem 1rem; /* Reduced from 0.75rem 1.5rem */
+  font-size: 0.875rem; /* Reduced from 1rem (14px instead of 16px) */
+  font-family: var(--font-ui);
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondary-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4); /* Slightly reduced from 0.5 */
+  color: rgba(255, 255, 255, 0.7); /* Lighten on hover */
+}
+
+.secondary-button:focus-visible {
+  outline: 0.1875rem solid var(--color-focus);
+  outline-offset: 0.25rem;
+}
+
+/* Modal backdrop */
+#modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(0.25rem); /* 4px */
+  z-index: 1999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .card,
