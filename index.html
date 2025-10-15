@@ -6,59 +6,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Playing Cards</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
 </head>
 
 <body>
-  <main id="playing-cards">
-    <div class="card">
+  <main id="playing-cards" role="main" aria-label="Playing cards display">
+    <div class="card" role="img" aria-label="Ace of Spades" tabindex="0">
       <div class="left">
-        <span class="suit">♠</span>
+        <span class="suit" aria-hidden="true">♠</span>
       </div>
       <div class="middle">
-        <span class="value">A</span>
-        <span class="suit-large">♠</span>
+        <span class="value" aria-hidden="true">A</span>
+        <span class="suit-large" aria-hidden="true">♠</span>
       </div>
       <div class="right">
-        <span class="suit">♠</span>
+        <span class="suit" aria-hidden="true">♠</span>
       </div>
     </div>
 
-    <div class="card red">
+    <div class="card red" role="img" aria-label="King of Hearts" tabindex="0">
       <div class="left">
-        <span class="suit">♥</span>
+        <span class="suit" aria-hidden="true">♥</span>
       </div>
       <div class="middle">
-        <span class="value">K</span>
-        <span class="suit-large">♥</span>
+        <span class="value" aria-hidden="true">K</span>
+        <span class="suit-large" aria-hidden="true">♥</span>
       </div>
       <div class="right">
-        <span class="suit">♥</span>
+        <span class="suit" aria-hidden="true">♥</span>
       </div>
     </div>
 
-    <div class="card red">
+    <div class="card red" role="img" aria-label="Queen of Diamonds" tabindex="0">
       <div class="left">
-        <span class="suit">♦</span>
+        <span class="suit" aria-hidden="true">♦</span>
       </div>
       <div class="middle">
-        <span class="value">Q</span>
-        <span class="suit-large">♦</span>
+        <span class="value" aria-hidden="true">Q</span>
+        <span class="suit-large" aria-hidden="true">♦</span>
       </div>
       <div class="right">
-        <span class="suit">♦</span>
+        <span class="suit" aria-hidden="true">♦</span>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" role="img" aria-label="Jack of Clubs" tabindex="0">
       <div class="left">
-        <span class="suit">♣</span>
+        <span class="suit" aria-hidden="true">♣</span>
       </div>
       <div class="middle">
-        <span class="value">J</span>
-        <span class="suit-large">♣</span>
+        <span class="value" aria-hidden="true">J</span>
+        <span class="suit-large" aria-hidden="true">♣</span>
       </div>
       <div class="right">
-        <span class="suit">♣</span>
+        <span class="suit" aria-hidden="true">♣</span>
       </div>
     </div>
   </main>

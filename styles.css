@@ -7,7 +7,7 @@
 
 body {
   font-family: 'Arial', sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1a1a1a;
   min-height: 100vh;
   padding: 40px 20px;
 }
@@ -24,25 +24,29 @@ body {
 .card {
   width: 180px;
   height: 260px;
-  background: white;
+  background: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 30px rgba(255, 255, 255, 0.2),
+              0 0 60px rgba(255, 255, 255, 0.1);
   padding: 15px;
   display: flex;
   justify-content: space-between;
   position: relative;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  color: #000;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+  color: #000000;
+  cursor: pointer;
+  transform-style: preserve-3d;
 }
 
 .card:hover {
   transform: translateY(-10px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 20px rgba(255, 255, 255, 0.3),
+              0 0 40px rgba(255, 255, 255, 0.2);
 }
 
-/* Red cards (hearts and diamonds) */
+/* Red cards (hearts and diamonds) - WCAG AAA compliant red */
 .card.red {
-  color: #e74c3c;
+  color: #c0392b;
 }
 
 /* Left section - top suit */
@@ -80,4 +84,30 @@ body {
   font-weight: bold;
   line-height: 1;
   transform: rotate(180deg);
+}
+
+/* Keyboard focus indicator - WCAG AAA compliant */
+.card:focus {
+  outline: 3px solid #4da6ff;
+  outline-offset: 4px;
+}
+
+.card:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.card:focus-visible {
+  outline: 3px solid #4da6ff;
+  outline-offset: 4px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
 }
