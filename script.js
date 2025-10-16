@@ -24,13 +24,13 @@ class SolitaireGame {
     this.lastGameStateHash = ''; // Track game state for unwinnable detection
 
     this.init();
+    this.attachEventListeners(); // Attach listeners only once in constructor
   }
 
   init() {
     this.createDeck();
     this.dealCards();
     this.renderGame();
-    this.attachEventListeners();
     this.updateUndoButton();
     this.updateAutoCompleteButton();
     this.startTimer();
