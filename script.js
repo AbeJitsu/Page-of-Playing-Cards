@@ -316,6 +316,64 @@ class SolitaireGame {
     }
 
     e.dataTransfer.effectAllowed = 'move';
+
+    // Create a custom drag image showing just the card(s) being dragged
+    const dragImageContainer = document.createElement('div');
+    dragImageContainer.style.position = 'absolute';
+    dragImageContainer.style.top = '-9999px';
+    dragImageContainer.style.left = '-9999px';
+    dragImageContainer.style.width = '120px';
+
+    // Clone the card being dragged
+    const cardClone = cardEl.cloneNode(true);
+    cardClone.style.position = 'absolute';
+    cardClone.style.top = '0';
+    cardClone.style.left = '0';
+    cardClone.style.margin = '0';
+    cardClone.style.opacity = '0.8';
+    cardClone.style.zIndex = '0';
+    dragImageContainer.appendChild(cardClone);
+
+    // If dragging from tableau, include all cards in the stack
+    if (pile.classList.contains('tableau-pile')) {
+      const pileIndex = parseInt(pile.dataset.pile);
+      const tableauPile = this.tableau[pileIndex];
+      const cardIndex = tableauPile.indexOf(this.draggedCard);
+
+      // If there are cards below the dragged card, add them to the drag image
+      if (cardIndex < tableauPile.length - 1) {
+        for (let i = cardIndex + 1; i < tableauPile.length; i++) {
+          const card = tableauPile[i];
+          const additionalCardClone = card.element.cloneNode(true);
+          additionalCardClone.style.position = 'absolute';
+          additionalCardClone.style.top = `${(i - cardIndex) * 30}px`;
+          additionalCardClone.style.left = '0';
+          additionalCardClone.style.margin = '0';
+          additionalCardClone.style.opacity = '0.8';
+          additionalCardClone.style.zIndex = `${i - cardIndex}`;
+          dragImageContainer.appendChild(additionalCardClone);
+        }
+        // Adjust container height for stacked cards
+        const stackHeight = 168 + ((tableauPile.length - cardIndex - 1) * 30);
+        dragImageContainer.style.height = `${stackHeight}px`;
+      } else {
+        dragImageContainer.style.height = '168px';
+      }
+    } else {
+      dragImageContainer.style.height = '168px';
+    }
+
+    document.body.appendChild(dragImageContainer);
+
+    // Set the custom drag image with proper offset (center of card)
+    e.dataTransfer.setDragImage(dragImageContainer, 60, 84);
+
+    // Clean up the temporary drag image after drag starts
+    setTimeout(() => {
+      if (document.body.contains(dragImageContainer)) {
+        document.body.removeChild(dragImageContainer);
+      }
+    }, 0);
   }
 
   handleDragOver(e) {
